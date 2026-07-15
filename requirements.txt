@@ -1,0 +1,11 @@
+# Core requirements. For the full feature set (xgboost, lightgbm, shap, etc.)
+# use: pip install -e ".[full]"
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.3
+torch>=2.0
+statsmodels>=0.14
+matplotlib>=3.7
+jinja2>=3.1
+click>=8.1
