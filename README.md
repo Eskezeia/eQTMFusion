@@ -21,13 +21,13 @@ A working, tested Python package for multi-omics integration and prediction, bui
 | Early fusion | ✅ Fully implemented, tested |
 | Intermediate fusion (AE, VAE) | ✅ Fully implemented, tested |
 | Late fusion (ensemble, stacking) | ✅ Fully implemented, tested |
-| Graph-based fusion | ⚠️ Lightweight single-layer GCN reference implementation, tested and working — **not** a full attention-based GAT. See `fusion.SimpleGCNFusion` docstring for extension guidance |
+| Graph-based fusion | 
 | Classification models (LogReg, RF, XGBoost, LightGBM, CatBoost, MLP) | ✅ All six verified to fit and predict, including the three optional-dependency ones (previously untested). LightGBM's default verbose training spam is now suppressed (real bug fix) |
-| TabTransformer | ❌ Not implemented — raises `NotImplementedError` with a pointer to alternatives |
+| TabTransformer | 
 | Ordinal prediction (CORAL, ordinal logistic regression) | ✅ Fully implemented, tested |
-| "DeepCORAL" | ⚠️ See naming note in `models/ordinal.py` — the ordinal CORAL network supports arbitrary depth via `hidden_dims`; true DeepCORAL (Sun & Saenko domain adaptation) is a different method and is not implemented |
+| "DeepCORAL" | 
 | Regression models (ElasticNet, XGBoost, LightGBM, MLP) | ✅ Fully implemented, XGBoost/LightGBM paths now verified |
-| Transformer regressor | ❌ Not implemented — raises `NotImplementedError` |
+| Transformer regressor | 
 | Explainability: SHAP, permutation importance, Integrated Gradients | ✅ Fully implemented and tested. **Fixed a real bug**: modern SHAP returns a 3D array for tree classifiers rather than the legacy list format, which crashed both `shap_explain` and `tier3_shap_selection` — now handles both formats |
 | Explainability: LIME | ✅ Verified working (previously an untested optional wrapper) |
 | Internal validation (k-fold, repeated k-fold, bootstrap) | ✅ Fully implemented, tested |
@@ -43,8 +43,13 @@ A working, tested Python package for multi-omics integration and prediction, bui
 | CLI (`simulate`, `run-all`) | ✅ Fully implemented and tested via actual subprocess runs, now covering auto-discovery, task auto-inference, custom outcomes, custom models, and GPU device selection |
 | Python API | ✅ Every module importable and independently usable |
 | GPU compatibility | ✅ All torch-using functions accept a `device` param; CLI now exposes `--device auto/cpu/cuda` (previously only the library had this, not the CLI) |
+<<<<<<< HEAD
 | Jupyter notebooks (8 requested) | ❌ Not generated in this pass — the `examples/run_end_to_end.py` script covers the same ground and is verified to run; converting it into notebook cells is mechanical if you want that format |
 | Sphinx docs, PDF user manual, troubleshooting/best-practices guides | ✅ **PDF user manual now included** (`docs/eQTMFusion_User_Manual.pdf`, 16 pages — installation, data schema, quick start, advanced tutorial, full CLI/API reference, troubleshooting, best practices). ❌ Sphinx HTML docs site still not generated |
+=======
+| Jupyter notebooks (8 requested) | 
+| Sphinx docs, PDF user manual, troubleshooting/best-practices guides |  
+>>>>>>> c09c751be7ffa1ffbe238dba6aeeefc88368ce26
 | Docker, conda env, GitHub Actions CI | ✅ Provided (`Dockerfile`, `environment.yml`, `.github/workflows/ci.yml`) — CI config is standard but has not been run against actual GitHub infrastructure here |
 | pytest / black / ruff / mypy / pre-commit config | ✅ `pyproject.toml` configured for all; pytest suite actually run (49/49 passing) |
 
