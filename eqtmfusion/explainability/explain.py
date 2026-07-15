@@ -56,12 +56,68 @@ def permutation_importance_explain(
     model, X: np.ndarray, y: np.ndarray, feature_names: list,
     n_repeats: int = 10, random_state: int = 42, scoring: str = None,
 ) -> pd.DataFrame:
+    """
+    Permutation importance on a FITTED model, evaluated on the SAME data
+    passed in. IMPORTANT: if `model` was fit on this same X/y and has
+    overfit (common with many features and few samples), permutation
+    importance computed this way will be misleadingly close to zero for
+    every feature, because permuting a single column barely perturbs a
+    decision surface that has already memorized the training labels via
+    other feature combinations. Always pass held-out data here, or use
+    cv_permutation_importance() below, which handles this correctly by
+    construction.
+    """
     result = permutation_importance(
         model, X, y, n_repeats=n_repeats, random_state=random_state, scoring=scoring
     )
     df = pd.DataFrame({
         "importance_mean": result.importances_mean,
         "importance_std": result.importances_std,
+    }, index=feature_names)
+    return df.sort_values("importance_mean", ascending=False)
+
+
+def cv_permutation_importance(
+    model_fn, X: np.ndarray, y: np.ndarray, feature_names: list,
+    task: str = "classification", n_splits: int = 5, n_repeats: int = 5,
+    scoring: str = None, random_state: int = 42,
+) -> pd.DataFrame:
+    """
+    Cross-validated permutation importance: for each of n_splits folds, fit
+    a fresh model on the training portion and compute permutation importance
+    on the HELD-OUT portion, then average across folds. This is the
+    methodologically correct way to rank features by importance -- unlike
+    in-sample permutation importance, it does not collapse to near-zero for
+    an overfit model, because the held-out fold was never seen during
+    training for that fold.
+
+    model_fn: zero-arg callable returning an unfitted estimator with
+              .fit(X, y) and .predict(X) (and .predict_proba for
+              classification, if `scoring` needs it)
+    """
+    from sklearn.model_selection import KFold, StratifiedKFold
+
+    if task == "classification":
+        splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+        split_iter = splitter.split(X, y)
+    else:
+        splitter = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+        split_iter = splitter.split(X)
+
+    fold_importances = []
+    for train_idx, test_idx in split_iter:
+        model = model_fn()
+        model.fit(X[train_idx], y[train_idx])
+        result = permutation_importance(
+            model, X[test_idx], y[test_idx], n_repeats=n_repeats,
+            random_state=random_state, scoring=scoring,
+        )
+        fold_importances.append(result.importances_mean)
+
+    stacked = np.stack(fold_importances)  # (n_splits, n_features)
+    df = pd.DataFrame({
+        "importance_mean": stacked.mean(axis=0),
+        "importance_std": stacked.std(axis=0),
     }, index=feature_names)
     return df.sort_values("importance_mean", ascending=False)
 

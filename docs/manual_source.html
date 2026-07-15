@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>eQTMFusion User Manual</title>
+<style>
+  @page {
+    size: letter;
+    margin: 2.2cm 2cm 2.4cm 2cm;
+    @bottom-center {
+      content: "eQTMFusion User Manual  |  Page " counter(page) " of " counter(pages);
+      font-size: 9px;
+      color: #888;
+    }
+  }
+  @page :first {
+    @bottom-center { content: ""; }
+  }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #222;
+    font-size: 10.5px;
+    line-height: 1.55;
+  }
+  .cover {
+    height: 24cm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    page-break-after: always;
+  }
+  .cover .badge {
+    background: #1f3a52;
+    color: white;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin-bottom: 24px;
+  }
+  .cover h1 {
+    font-size: 34px;
+    margin: 0 0 10px 0;
+    color: #1f3a52;
+  }
+  .cover .subtitle {
+    font-size: 15px;
+    color: #555;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+  .cover .version {
+    font-size: 11px;
+    color: #999;
+    margin-top: 60px;
+  }
+  h1 {
+    font-size: 20px;
+    color: #1f3a52;
+    border-bottom: 2px solid #1f3a52;
+    padding-bottom: 6px;
+    margin-top: 0;
+    page-break-before: always;
+  }
+  h2 {
+    font-size: 15px;
+    color: #1f3a52;
+    margin-top: 26px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 3px;
+  }
+  h3 {
+    font-size: 12.5px;
+    color: #333;
+    margin-top: 18px;
+  }
+  p { margin: 8px 0; }
+  code {
+    background: #f2f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: "SF Mono", Consolas, Monaco, monospace;
+    font-size: 9.5px;
+    color: #b3312c;
+  }
+  pre {
+    background: #1f2733;
+    color: #e8ecf1;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-family: "SF Mono", Consolas, Monaco, monospace;
+    font-size: 9px;
+    line-height: 1.5;
+    overflow-x: auto;
+    page-break-inside: avoid;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 9.5px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #eef2f5; color: #1f3a52; }
+  .status-yes { color: #1a7f37; font-weight: bold; }
+  .status-no { color: #c0342c; font-weight: bold; }
+  .status-partial { color: #b5860b; font-weight: bold; }
+  .note {
+    background: #fff8e6;
+    border-left: 4px solid #e0b429;
+    padding: 8px 12px;
+    margin: 12px 0;
+    font-size: 9.5px;
+  }
+  .toc { page-break-after: always; }
+  .toc ul { list-style: none; padding-left: 0; }
+  .toc li { margin: 6px 0; font-size: 11px; }
+  .toc .sub { padding-left: 20px; font-size: 10px; color: #555; }
+  .toc a { color: #1f3a52; text-decoration: none; }
+  .module-path { color: #888; font-size: 9px; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="badge">EQTMFUSION v0.1.0</div>
+  <h1>eQTMFusion</h1>
+  <div class="subtitle">An eQTM-Guided Multi-Omics Machine Learning Framework for
+  Predicting Asthma Severity, Lung Function, IgE, and Other Clinical Outcomes</div>
+  <div class="version">User Manual &middot; Installation &middot; API Reference &middot; CLI Reference &middot; Troubleshooting</div>
+</div>
+
+<div class="toc">
+<h1 style="page-break-before: avoid;">Table of Contents</h1>
+<ul>
+  <li><a>1. Introduction &amp; Scope</a></li>
+  <li><a>2. Installation Guide</a></li>
+  <li><a>3. Data Formatting Guide</a></li>
+  <li><a>4. Quick Start Tutorial</a></li>
+  <li><a>5. Advanced Tutorial: Custom Cohorts &amp; Outcomes</a></li>
+  <li><a>6. CLI Reference</a></li>
+  <li><a>7. Publication-Quality Outputs (Figures &amp; Tables)</a></li>
+  <li><a>8. Python API Reference</a>
+    <div class="sub">8.1 simulation &middot; 8.2 qc &middot; 8.3 preprocessing &middot; 8.4 eqtm &middot;
+    8.5 feature_selection &middot; 8.6 fusion &middot; 8.7 models &middot; 8.8 explainability &middot;
+    8.9 visualization &middot; 8.10 reporting &middot; 8.11 utilities</div>
+  </li>
+  <li><a>9. Troubleshooting Guide</a></li>
+  <li><a>10. Best Practices Guide</a></li>
+  <li><a>11. Implementation Status &amp; Known Limitations</a></li>
+</ul>
+</div>
+
+<!-- ================= 1. INTRODUCTION ================= -->
+<h1>1. Introduction &amp; Scope</h1>
+
+<p>eQTMFusion is a Python package for integrating multiple omics modalities
+(DNA methylation, gene expression, SNPs, miRNA, metabolomics, proteomics, and
+any custom modality you provide) to predict clinical outcomes, with a
+particular focus on asthma severity, lung function (FEV1), and IgE. Its
+central methodological idea is <strong>eQTM-guided feature selection</strong>:
+methylation features are prioritized using expression quantitative trait
+methylation (eQTM) associations discovered in your own cohort, rather than
+selecting features by variance alone.</p>
+
+<p>The package is disease-agnostic. The asthma framing (clinical variables,
+synthetic data generator) is a worked example; the underlying pipeline
+&mdash; QC, preprocessing, eQTM analysis, tiered feature selection, multi-omics
+fusion, prediction, explainability, and reporting &mdash; applies to any
+cohort with the same tabular structure.</p>
+
+<div class="note">
+<strong>Honesty note:</strong> this manual documents what is actually
+implemented and tested in the shipped package (49/49 unit tests passing,
+including subprocess-level CLI tests). Section 11 lists items that are
+intentionally out of scope or only partially implemented, so nothing here
+is oversold.
+</div>
+
+<h2>1.1 Package Structure</h2>
+<pre>eqtmfusion/
+├── simulation/        synthetic multi-omics asthma cohort generator
+├── qc/                missingness / outlier QC
+├── preprocessing/     imputation, scaling, categorical/ordinal encoding
+├── eqtm/              cis-/trans-eQTM analysis (OLS + mixed models, FDR)
+├── feature_selection/ Tier1 (eQTM prior) / Tier2 (variance, MAD) /
+│                      Tier3 (LASSO, ElasticNet, RF, XGBoost, Boruta, SHAP)
+├── fusion/            early / intermediate (AE, VAE) / late (ensemble,
+│                      stacking) / graph-based fusion
+├── models/            classification, ordinal (CORAL, ordinal logistic),
+│                      regression
+├── explainability/    SHAP, permutation importance, integrated gradients, LIME
+├── visualization/     ROC/PR, volcano, heatmap, PCA/UMAP/t-SNE, correlation,
+│                      feature importance, eQTM network
+├── reporting/         Jinja2 HTML report (+ optional PDF via weasyprint)
+├── utilities/         metrics, CV / bootstrap / external validation, logging
+└── cli/               click-based command-line interface
+
+tests/                 49 unit tests (pytest)
+examples/              run_end_to_end.py: full working walkthrough
+docs/                  this manual</pre>
+
+
+<!-- ================= 2. INSTALLATION ================= -->
+<h1>2. Installation Guide</h1>
+
+<h2>2.1 Requirements</h2>
+<p>Python 3.10 or later. Core dependencies (numpy, pandas, scipy,
+scikit-learn, torch, statsmodels, matplotlib, jinja2, click) install
+automatically. Optional extras add xgboost, lightgbm, catboost, shap, lime,
+umap-learn, seaborn, networkx, Boruta, and weasyprint (for PDF reports).</p>
+
+<h2>2.2 Install from source</h2>
+<pre>unzip eQTMFusion.zip
+cd eQTMFusion
+
+# Core install
+pip install -e .
+
+# Full feature set (recommended)
+pip install -e ".[full]"
+
+# Development tools (pytest, black, ruff, mypy, pre-commit)
+pip install -e ".[dev]"</pre>
+
+<h2>2.3 Docker</h2>
+<pre>docker build -t eqtmfusion .
+docker run --rm eqtmfusion simulate --out /data --n-subjects 200
+docker run --rm -v $(pwd)/data:/data eqtmfusion run-all \
+    --data-dir /data --outcome severity --out /data/results</pre>
+
+<h2>2.4 Conda</h2>
+<pre>conda env create -f environment.yml
+conda activate eqtmfusion</pre>
+
+<h2>2.5 Verifying the install</h2>
+<pre>eqtmfusion --help
+pytest tests/ -q          # should report "30 passed"</pre>
+
+<div class="note">
+<strong>PDF report generation</strong> via weasyprint has system-level
+dependencies (Pango, Cairo, GDK-PixBuf) beyond the Python package. If
+<code>pip install weasyprint</code> succeeds but PDF generation fails, see
+Section 9 (Troubleshooting) or consult
+https://doc.courtbouillon.org/weasyprint/stable/first_steps.html for
+platform-specific system libraries.
+</div>
+
+
+<!-- ================= 3. DATA FORMATTING ================= -->
+<h1>3. Data Formatting Guide</h1>
+
+<p>eQTMFusion expects a directory containing one <code>clinical.csv</code>
+file plus any number of omics CSVs. There is no fixed list of required omics
+&mdash; every CSV file other than <code>clinical.csv</code> is automatically
+treated as a separate modality, named after its filename.</p>
+
+<h2>3.1 clinical.csv</h2>
+<p>First column (or index) must be <code>subject_id</code>. Any other
+columns are treated as clinical variables and can be used as an outcome.
+The built-in simulator produces these columns as a reference schema:</p>
+<pre>subject_id, age, sex, bmi, race, smoking_status, asthma_status, severity,
+gina_step, fev1, fvc, fev1_fvc, ige, eosinophils, ics_use,
+hospitalization, exacerbation_count</pre>
+<p>You are not restricted to these column names &mdash; any column can be
+passed to <code>--outcome</code> on the CLI or to the Python API.</p>
+
+<h2>3.2 Omics CSVs (any modality)</h2>
+<p>Each omics file must be a <em>subjects &times; features</em> matrix with
+<code>subject_id</code> as the first column/index, matching the same
+subject IDs used in <code>clinical.csv</code> (partial overlap across
+modalities is fine &mdash; QC and fusion handle missing/partial subjects).</p>
+<pre>data/
+├── clinical.csv
+├── methylation.csv      -&gt; modality "methylation"
+├── expression.csv       -&gt; modality "expression"
+├── snps.csv              -&gt; modality "snps"
+├── mirna.csv              -&gt; modality "mirna"
+├── metabolomics.csv       -&gt; modality "metabolomics"
+├── proteomics.csv         -&gt; modality "proteomics"
+└── my_custom_omic.csv     -&gt; modality "my_custom_omic"  (works automatically)</pre>
+
+<h2>3.3 eQTM prior (optional but recommended)</h2>
+<p>If a <code>ground_truth.json</code> file is present in the data
+directory with a <code>causal_cpgs</code> key (a list of CpG IDs), those
+CpGs are used as the Tier 1 biological prior for methylation feature
+selection. In real usage, this list should come from running
+<code>eqtmfusion.eqtm.run_eqtm_analysis</code> on your own cohort first
+(see Section 5), not from a simulator.</p>
+
+
+<!-- ================= 4. QUICK START ================= -->
+<h1>4. Quick Start Tutorial</h1>
+
+<h2>4.1 Generate a demo cohort</h2>
+<pre>eqtmfusion simulate --out data/ \
+    --n-subjects 300 --n-cpgs 2000 --n-genes 1000 \
+    --n-snps 500 --n-mirna 100 --n-metabolites 100 --n-proteins 200</pre>
+
+<h2>4.2 Run the full pipeline</h2>
+<pre># Ordinal severity prediction (auto-discovers all 6 omics files, auto-infers
+# task type from the outcome column, runs 5-fold CV by default)
+eqtmfusion run-all --data-dir data/ --outcome severity --out results/
+
+# Binary classification
+eqtmfusion run-all --data-dir data/ --outcome asthma_status --out results/
+
+# Continuous regression
+eqtmfusion run-all --data-dir data/ --outcome fev1 --out results/</pre>
+
+<h2>4.3 View the report</h2>
+<p>Open <code>results/report.html</code> in a browser. It includes data
+summary tables, QC results, feature selection breakdown (Tier1 eQTM-prioritized
+vs. Tier2 variance-backfilled counts per modality), and both in-sample and
+cross-validated metrics side by side.</p>
+
+<h2>4.4 Convert the report to PDF</h2>
+<pre>python3 -c "
+from eqtmfusion.reporting import generate_pdf_report
+generate_pdf_report('results/report.html', 'results/report.pdf')
+"</pre>
+
+
+<!-- ================= 5. ADVANCED TUTORIAL ================= -->
+<h1>5. Advanced Tutorial: Custom Cohorts &amp; Outcomes</h1>
+
+<h2>5.1 Using your own data</h2>
+<p>Replace the simulated CSVs with your own, keeping the same column
+conventions (Section 3). No code changes are required &mdash; the CLI and
+API auto-discover modalities from whatever CSVs are present.</p>
+
+<h2>5.2 Custom outcome columns</h2>
+<pre># Any clinical.csv column works, not just the built-in ones
+eqtmfusion run-all --data-dir data/ --outcome exacerbation_count \
+    --task regression --model xgboost --out results/ --n-cv-folds 5</pre>
+<p><code>--task auto</code> (the default) infers classification vs. ordinal
+vs. regression from the column's dtype and number of unique values. Override
+with <code>--task classification|ordinal|regression</code> when the
+inference would be ambiguous (e.g. a low-cardinality count variable).</p>
+
+<h2>5.3 Running the eQTM analysis yourself</h2>
+<pre>from eqtmfusion.eqtm import run_eqtm_analysis, get_significant_eqtm_cpgs
+import pandas as pd
+
+methylation = pd.read_csv("data/methylation.csv", index_col=0)
+expression = pd.read_csv("data/expression.csv", index_col=0)
+clinical = pd.read_csv("data/clinical.csv", index_col=0)
+covariates = clinical[["age", "sex", "bmi", "smoking_status"]]
+
+result = run_eqtm_analysis(
+    methylation, expression, covariates,
+    candidate_pairs=None,       # None = all CpG x gene combinations
+                                 # (use a pre-filtered candidate list for
+                                 # genome-wide data; see Section 9.3)
+    eqtm_type="cis", model="linear", fdr_alpha=0.05,
+)
+sig_cpgs = get_significant_eqtm_cpgs(result, fdr_thresh=0.05)</pre>
+
+<h2>5.4 Building a Python pipeline manually</h2>
+<pre>from eqtmfusion.qc import run_qc
+from eqtmfusion.preprocessing import preprocess_omics_matrix
+from eqtmfusion.feature_selection import combine_tier1_tier2
+from eqtmfusion.fusion import early_fusion
+from eqtmfusion.models import get_classifier
+from eqtmfusion.explainability import shap_explain
+from eqtmfusion.visualization import plot_roc_curve
+from eqtmfusion.reporting import generate_html_report
+
+methylation, meth_qc = run_qc(methylation, "methylation")
+methylation = preprocess_omics_matrix(methylation)
+features, report = combine_tier1_tier2(methylation, sig_cpgs, target_n=500)
+methylation = methylation[features]
+
+fused = early_fusion({"methylation": methylation, "expression": expression})
+clf = get_classifier("xgboost")
+clf.fit(fused.values, y.values)
+
+shap_df = shap_explain(clf, fused.values, fused.columns.tolist(), model_type="tree")</pre>
+
+<p>See <code>examples/run_end_to_end.py</code> in the package for a
+complete, verified-working script covering simulate &rarr; QC &rarr;
+preprocess &rarr; eQTM &rarr; feature-select &rarr; fuse &rarr; train &rarr;
+explain &rarr; visualize &rarr; report.</p>
+
+
+<!-- ================= 6. CLI REFERENCE ================= -->
+<h1>6. CLI Reference</h1>
+
+<h2>6.1 <code>eqtmfusion simulate</code></h2>
+<table>
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td>--out</td><td>data</td><td>Output directory</td></tr>
+<tr><td>--n-subjects</td><td>200</td><td>Number of subjects</td></tr>
+<tr><td>--n-cpgs</td><td>2000</td><td>Number of CpGs</td></tr>
+<tr><td>--n-genes</td><td>1000</td><td>Number of genes</td></tr>
+<tr><td>--n-snps</td><td>500</td><td>Number of SNPs</td></tr>
+<tr><td>--n-mirna</td><td>100</td><td>Number of miRNAs</td></tr>
+<tr><td>--n-metabolites</td><td>100</td><td>Number of metabolites</td></tr>
+<tr><td>--n-proteins</td><td>200</td><td>Number of proteins</td></tr>
+<tr><td>--seed</td><td>42</td><td>Random seed</td></tr>
+</table>
+
+<h2>6.2 <code>eqtmfusion run-all</code></h2>
+<table>
+<tr><th>Option</th><th>Default</th><th>Description</th></tr>
+<tr><td>--data-dir</td><td>required</td><td>Directory with clinical.csv + any omics CSVs</td></tr>
+<tr><td>--outcome</td><td>severity</td><td>Any column name in clinical.csv</td></tr>
+<tr><td>--task</td><td>auto</td><td>auto | classification | ordinal | regression</td></tr>
+<tr><td>--model</td><td>(task default)</td><td>random_forest, xgboost, lightgbm, catboost, logreg, mlp (classification); elasticnet, xgboost, lightgbm, mlp (regression); CORAL always used for ordinal</td></tr>
+<tr><td>--out</td><td>results</td><td>Output directory for report.html</td></tr>
+<tr><td>--target-n-features</td><td>500</td><td>Features retained per modality (Tier1+Tier2)</td></tr>
+<tr><td>--eqtm-modality</td><td>methylation</td><td>Which discovered modality gets the eQTM Tier1 prior</td></tr>
+<tr><td>--n-cv-folds</td><td>5</td><td>K-fold CV for reportable metrics; 0 = in-sample only (fast, exploratory)</td></tr>
+<tr><td>--device</td><td>auto</td><td>auto | cpu | cuda (for the CORAL ordinal model)</td></tr>
+</table>
+
+
+<!-- ================= 7. PUBLICATION OUTPUTS ================= -->
+<h1>7. Publication-Quality Outputs (Figures &amp; Tables)</h1>
+
+<p>Every <code>run-all</code> invocation automatically writes a full
+publication-ready output bundle to <code>&lt;out&gt;/figures/</code> and
+<code>&lt;out&gt;/tables/</code>, styled per Nature-family journal
+conventions: sans-serif fonts, thin axis lines, no top/right spines,
+outward ticks, the Okabe-Ito colorblind-safe palette, lettered panels
+(A, B, C...), and 300+ dpi PNG plus vector PDF export for every figure.</p>
+
+<h2>7.1 Figures</h2>
+<table>
+<tr><th>File</th><th>Contents</th></tr>
+<tr><td>Figure1_model_diagnostics</td><td>Task-dependent 4-panel diagnostic:
+classification (ROC, PR, confusion matrix, calibration curve); regression
+(predicted-vs-observed, residuals-vs-fitted, residual histogram,
+Bland-Altman agreement plot); ordinal (row-normalized confusion matrix,
+per-class accuracy). Computed on <strong>out-of-fold cross-validated
+predictions</strong>, not in-sample, whenever <code>--n-cv-folds &gt; 0</code>.</td></tr>
+<tr><td>Figure2_feature_importance</td><td>Horizontal bar chart of top
+features by cross-validated permutation importance, colored by omics
+modality.</td></tr>
+<tr><td>Figure3_cv_performance_summary</td><td>Box + strip plot of each
+metric's distribution across CV folds, for reporting model stability
+rather than a single point estimate.</td></tr>
+<tr><td>Figure4_eqtm_forest_plot</td><td>Forest plot (&beta; &plusmn; 95%
+CI) of the top eQTM associations, generated automatically when the demo
+simulator's <code>ground_truth.json</code> is present; for real cohorts,
+generate this yourself from <code>run_eqtm_analysis</code> output and pass
+it to <code>generate_publication_outputs(eqtm_results=...)</code>.</td></tr>
+</table>
+
+<h2>7.2 Tables</h2>
+<table>
+<tr><th>File</th><th>Contents</th></tr>
+<tr><td>Table1_cohort_characteristics</td><td>Conventional clinical Table 1:
+continuous variables as mean (SD), categorical as n (%), stratified by
+outcome group with between-group test p-values (Welch's t-test / ANOVA /
+chi-square as appropriate).</td></tr>
+<tr><td>Table2_model_performance_summary</td><td>Mean &plusmn; SD across CV
+folds for every reported metric, formatted as publication-ready strings.</td></tr>
+<tr><td>Table3_top_biomarkers</td><td>Ranked, modality-annotated feature
+importance table (Modality / Feature / importance value columns).</td></tr>
+</table>
+
+<div class="note">
+<strong>Critical methodology note:</strong> feature importance is computed
+via <code>cv_permutation_importance</code> (retrain-per-fold, evaluate on
+held-out data), not naive in-sample permutation importance. With hundreds
+of features and modest sample sizes, in-sample permutation importance on an
+overfit model collapses to ~0 for every feature, because permuting one
+column barely perturbs a decision surface that already memorized the
+training labels via other feature combinations. This was found and fixed
+during development &mdash; see Section 11.4.
+</div>
+
+<h2>7.3 Generating the bundle manually</h2>
+<pre>from eqtmfusion.reporting import generate_publication_outputs
+
+outputs = generate_publication_outputs(
+    outdir="results/", task="classification",
+    y_true=oof_y_true, y_pred=oof_y_pred, y_proba=oof_y_proba,  # out-of-fold!
+    clinical_df=clinical, group_col="asthma_status",
+    cv_metrics_df=cv_metrics_df,
+    importance_df=importance_df, importance_value_col="importance_mean",
+    eqtm_results=eqtm_result.results,   # optional
+    class_labels=["Control", "Case"],
+    title_prefix="Asthma cohort: ",
+)</pre>
+<p>Any input left as <code>None</code> is skipped rather than raising an
+error, so this can be called with partial results (e.g. no eQTM analysis
+run, or no clinical dataframe for Table 1).</p>
+
+<h2>7.4 Individual figure/table functions</h2>
+<p>For custom layouts, call the individual functions directly:
+<code>eqtmfusion.visualization.fig_classification_diagnostics</code>,
+<code>fig_regression_diagnostics</code>, <code>fig_ordinal_diagnostics</code>,
+<code>fig_feature_importance_panel</code>, <code>fig_cv_performance_summary</code>,
+<code>fig_eqtm_forest_plot</code>; and
+<code>eqtmfusion.reporting.table1_cohort_characteristics</code>,
+<code>table_model_performance_summary</code>, <code>table_top_biomarkers</code>,
+<code>save_table</code> (CSV/XLSX/LaTeX), and <code>dataframe_to_image</code>
+(render any table as a publication-style PNG, e.g. for a supplementary
+"Table S1" panel). Use <code>eqtmfusion.visualization.save_publication_figure</code>
+to export any custom matplotlib figure at 300+ dpi in PNG/PDF/SVG together.</p>
+
+
+<!-- ================= 8. API REFERENCE ================= -->
+<h1>8. Python API Reference</h1>
+
+<h2>8.1 <code>eqtmfusion.simulation</code></h2>
+<p class="module-path">simulate_cohort(), save_cohort(), SimulatedCohort, SCHEMA</p>
+<p>Generates a synthetic multi-omics cohort with embedded ground-truth
+eQTM pairs and causal features, for testing and demonstration.
+<code>SCHEMA</code> documents the exact clinical column names expected
+elsewhere in the package.</p>
+
+<h2>8.2 <code>eqtmfusion.qc</code></h2>
+<p class="module-path">run_qc(), missingness_summary(), detect_outlier_samples_iqr(), QCReport</p>
+<p>Drops features/samples exceeding missingness thresholds and flags
+outlier samples via an IQR rule on per-sample feature means.</p>
+
+<h2>8.3 <code>eqtmfusion.preprocessing</code></h2>
+<p class="module-path">impute_missing(), scale_features(), preprocess_omics_matrix(),
+encode_clinical_categoricals(), encode_severity_ordinal()</p>
+<p>kNN or mean/median imputation, standard scaling, and categorical/ordinal
+encoding for clinical variables.</p>
+
+<h2>8.4 <code>eqtmfusion.eqtm</code></h2>
+<p class="module-path">run_eqtm_analysis(), get_significant_eqtm_cpgs(), get_significant_eqtm_genes(), EQTMResult</p>
+<p>cis-/trans-eQTM testing via OLS or linear mixed models, with covariate
+adjustment and Benjamini-Hochberg FDR correction. Tests are run per
+candidate (CpG, gene) pair; for genome-wide unrestricted scans, pre-filter
+your candidate list (see Section 9.3).</p>
+
+<h2>8.5 <code>eqtmfusion.feature_selection</code></h2>
+<p class="module-path">tier1_eqtm_prior(), tier2_variance_threshold(), tier2_mad_ranking(),
+combine_tier1_tier2(), tier3_lasso_selection(), tier3_elasticnet_selection(),
+tier3_random_forest_importance(), tier3_xgboost_importance(),
+tier3_boruta_selection(), tier3_shap_selection()</p>
+<p>Three-tier selection: Tier 1 (eQTM biological prior), Tier 2
+(variance/MAD, unsupervised backfill), Tier 3 (supervised ML-based, applied
+against a specific outcome).</p>
+
+<h2>8.6 <code>eqtmfusion.fusion</code></h2>
+<p class="module-path">early_fusion(), intermediate_fusion_autoencoder(),
+late_fusion_ensemble(), late_fusion_stacking(), graph_fusion_embed(),
+Autoencoder, VariationalAutoencoder, SimpleGCNFusion</p>
+<p>Four fusion strategies. Graph-based fusion is a lightweight single-layer
+GCN reference implementation &mdash; see Section 11 for its limitations
+relative to a full attention-based GAT.</p>
+
+<h2>8.7 <code>eqtmfusion.models</code></h2>
+<p class="module-path">get_classifier(), get_regressor(), CoralOrdinalNet,
+train_coral_model(), predict_coral(), fit_ordinal_logistic(), predict_ordinal_logistic()</p>
+<p>Classifiers: logreg, random_forest, xgboost, lightgbm, catboost, mlp.
+Regressors: elasticnet, xgboost, lightgbm, mlp. Ordinal: CORAL neural
+network (rank-consistent) or proportional-odds ordinal logistic regression.</p>
+
+<h2>8.8 <code>eqtmfusion.explainability</code></h2>
+<p class="module-path">shap_explain(), permutation_importance_explain(),
+integrated_gradients(), lime_explain(), top_biomarkers_by_modality()</p>
+<p>SHAP (tree or kernel), permutation importance, integrated gradients
+(for any PyTorch model in this package), and an optional LIME wrapper.
+<code>top_biomarkers_by_modality()</code> splits a fused-feature importance
+table back out per modality (CpG/gene/SNP/miRNA/protein/metabolite).</p>
+
+<h2>8.9 <code>eqtmfusion.visualization</code></h2>
+<p class="module-path">plot_roc_curve(), plot_pr_curve(), plot_volcano(),
+plot_heatmap(), plot_pca(), plot_embedding(), plot_correlation_matrix(),
+plot_feature_importance(), plot_eqtm_network()</p>
+<p><code>plot_embedding()</code> uses UMAP if <code>umap-learn</code> is
+installed, otherwise falls back to t-SNE automatically.</p>
+
+<h2>8.10 <code>eqtmfusion.reporting</code></h2>
+<p class="module-path">generate_html_report(), generate_pdf_report()</p>
+<p>Jinja2-based HTML report with embedded base64 figures; optional PDF
+export via weasyprint.</p>
+
+<h2>8.11 <code>eqtmfusion.utilities</code></h2>
+<p class="module-path">classification_metrics(), regression_metrics(),
+ordinal_metrics(), concordance_correlation_coefficient(), run_cv(),
+bootstrap_metric(), external_validation(), get_logger()</p>
+<p>Includes MCC, sensitivity/specificity, CCC (Lin's concordance), and
+quadratic weighted kappa, alongside standard accuracy/AUC/RMSE/R&sup2;.</p>
+
+
+<!-- ================= 8. TROUBLESHOOTING ================= -->
+<h1>9. Troubleshooting Guide</h1>
+
+<h2>9.1 <code>ImportError</code> for xgboost / lightgbm / catboost / shap / lime / boruta / umap-learn</h2>
+<p>These are optional extras. Install with <code>pip install -e ".[full]"</code>,
+or individually, e.g. <code>pip install shap</code>. The package raises a
+clear <code>ImportError</code> naming the missing package rather than
+failing silently.</p>
+
+<h2>9.2 PDF report generation fails</h2>
+<p>weasyprint requires system libraries (Pango, Cairo, GDK-PixBuf) in
+addition to the Python package. On Debian/Ubuntu:</p>
+<pre>sudo apt-get install libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0</pre>
+<p>On macOS via Homebrew: <code>brew install pango</code>. See
+https://doc.courtbouillon.org/weasyprint/stable/first_steps.html for the
+full platform matrix. The HTML report remains fully usable even if PDF
+export is unavailable.</p>
+
+<h2>9.3 eQTM analysis is slow or runs out of memory</h2>
+<p><code>run_eqtm_analysis</code> fits one OLS/mixed model per candidate
+(CpG, gene) pair. Passing <code>candidate_pairs=None</code> tests every
+combination present in both matrices, which is computationally infeasible
+for genome-wide data (e.g. 50,000 CpGs &times; 10,000 genes = 5&times;10&sup8;
+tests). Always pre-filter to a manageable candidate list: nearby gene-CpG
+pairs for a cis scan, or a variance/MAD-filtered feature subset for an
+exploratory trans scan. A warning is raised if your candidate list exceeds
+<code>max_pairs_warning</code> (default 2,000,000).</p>
+
+<h2>9.4 LightGBM prints excessive training logs</h2>
+<p>Fixed in this release &mdash; <code>get_classifier("lightgbm")</code>
+and <code>get_regressor("lightgbm")</code> set <code>verbose=-1</code> by
+default. If you still see per-iteration logs, you are likely constructing
+the model directly via <code>lightgbm.LGBMClassifier(...)</code> rather
+than through <code>eqtmfusion.models.get_classifier</code>.</p>
+
+<h2>9.5 Task auto-inference picks the "wrong" type for my outcome</h2>
+<p><code>--task auto</code> uses simple heuristics (string/low-cardinality
+&rarr; classification/ordinal, else regression). For genuinely ambiguous
+columns (e.g. a 0&ndash;5 count variable), specify <code>--task</code>
+explicitly rather than relying on inference.</p>
+
+<h2>9.6 CORAL ordinal model metrics look unstable across folds</h2>
+<p>The CORAL network trains from a random initialization each fold with a
+fixed <code>n_epochs</code> (default 200). For small cohorts, either
+increase epochs, reduce the feature count first (Section 5.4), or fall back
+to <code>fit_ordinal_logistic</code> (proportional-odds regression), which
+is more stable at small sample sizes at the cost of the linearity
+assumption.</p>
+
+<h2>9.7 <code>pip install -e .</code> fails on <code>--break-system-packages</code> environments</h2>
+<p>On externally-managed Python installations (common on recent
+Debian/Ubuntu), use a virtual environment instead:</p>
+<pre>python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[full]"</pre>
+
+
+<!-- ================= 9. BEST PRACTICES ================= -->
+<h1>10. Best Practices Guide</h1>
+
+<h2>10.1 Always report cross-validated metrics, not in-sample</h2>
+<p>The CLI's <code>report.html</code> shows both in-sample and CV metrics
+side by side deliberately: with hundreds of features and modest sample
+sizes, in-sample accuracy can reach 1.0 while CV accuracy is far lower. Use
+<code>--n-cv-folds 5</code> (or 10) for any result you intend to report or
+publish; treat <code>--n-cv-folds 0</code> as an exploratory-only mode.</p>
+
+<h2>10.2 Derive the eQTM prior from your own cohort, not a generic list</h2>
+<p>Tier 1 feature selection is only as good as the eQTM analysis behind
+it. Run <code>run_eqtm_analysis</code> on your actual methylation +
+expression + covariates before setting <code>--eqtm-modality</code>, rather
+than reusing CpG lists from an unrelated cohort or tissue type.</p>
+
+<h2>10.3 Match feature-selection budget to sample size</h2>
+<p>With <em>n</em> subjects, a feature budget well above <em>n</em>
+(e.g. 500 features for 150 subjects) will overfit badly in-sample. Use the
+CV metrics to tune <code>--target-n-features</code> down until CV
+performance stabilizes rather than trusting in-sample numbers.</p>
+
+<h2>10.4 Prefer Tier 1 + Tier 2 for exploratory work, add Tier 3 for a final model</h2>
+<p>Tier 3 (LASSO/RF/XGBoost/SHAP) selection is supervised and outcome-specific
+&mdash; running it before finalizing your outcome definition risks selecting
+features that won't generalize to a revised outcome. Use Tier 1+2 for
+exploration and integration, and apply Tier 3 once the outcome and cohort
+are finalized.</p>
+
+<h2>10.5 Use early fusion as your baseline before trying AE/VAE/graph fusion</h2>
+<p>Early fusion (simple concatenation) is the cheapest to compute and the
+easiest to debug. Establish a baseline with it before moving to
+intermediate (autoencoder) or graph-based fusion, so you can tell whether
+the more complex method is actually adding value on your data.</p>
+
+<h2>10.6 Treat the graph fusion module as a starting point, not a finished GNN</h2>
+<p><code>fusion.graph_fusion_embed</code> is a minimal single-layer GCN. For
+research-grade graph fusion (attention weighting, partial-overlap
+per-modality graphs), see the limitations noted in Section 11.2.</p>
+
+
+<!-- ================= 10. IMPLEMENTATION STATUS ================= -->
+<h1>11. Implementation Status &amp; Known Limitations</h1>
+
+<h2>11.1 Fully implemented and tested</h2>
+<table>
+<tr><th>Component</th><th>Status</th></tr>
+<tr><td>Synthetic multi-omics simulator</td><td class="status-yes">Tested</td></tr>
+<tr><td>QC, preprocessing, imputation, scaling</td><td class="status-yes">Tested</td></tr>
+<tr><td>cis-/trans-eQTM analysis (OLS + mixed models, FDR)</td><td class="status-yes">Tested</td></tr>
+<tr><td>Tier1/2/3 feature selection (incl. SHAP, Boruta)</td><td class="status-yes">Tested</td></tr>
+<tr><td>Early / intermediate (AE, VAE) / late fusion</td><td class="status-yes">Tested</td></tr>
+<tr><td>Classification, ordinal (CORAL), regression models</td><td class="status-yes">Tested</td></tr>
+<tr><td>SHAP, permutation importance, integrated gradients, LIME</td><td class="status-yes">Tested</td></tr>
+<tr><td>Visualization suite (incl. UMAP, seaborn, networkx paths)</td><td class="status-yes">Tested</td></tr>
+<tr><td>Publication-quality figures (6 multi-panel types, Nature styling, 300+ dpi)</td><td class="status-yes">Tested (0 text-overlap collisions across all 6 types)</td></tr>
+<tr><td>Publication-standard tables (Table 1, performance summary, biomarkers)</td><td class="status-yes">Tested</td></tr>
+<tr><td>Cross-validated permutation importance</td><td class="status-yes">Tested (regression test proves it does not collapse to zero, unlike the in-sample version)</td></tr>
+<tr><td>HTML + PDF reporting</td><td class="status-yes">Tested</td></tr>
+<tr><td>CLI: auto modality discovery, flexible outcomes, CV metrics, GPU flag, publication bundle</td><td class="status-yes">Tested (subprocess-level, 49/49 unit tests passing)</td></tr>
+</table>
+
+<h2>11.2 Intentionally lightweight or partial</h2>
+<table>
+<tr><th>Component</th><th>Status</th><th>Detail</th></tr>
+<tr><td>Graph-based fusion</td><td class="status-partial">Partial</td>
+<td>Single-layer GCN reference implementation, not a full attention-based
+GAT with per-modality partial-overlap graphs.</td></tr>
+<tr><td>"DeepCORAL"</td><td class="status-partial">Naming note</td>
+<td>The CORAL ordinal network supports arbitrary depth via
+<code>hidden_dims</code>. True DeepCORAL (Sun &amp; Saenko domain
+adaptation) is a different method and is not implemented.</td></tr>
+<tr><td>eQTM genome-wide scan</td><td class="status-partial">Partial</td>
+<td>Per-pair OLS, not a vectorized MatrixEQTL-style implementation. Fine
+for pre-filtered candidate lists; not for unrestricted millions-of-pairs scans.</td></tr>
+</table>
+
+<h2>11.3 Not implemented</h2>
+<table>
+<tr><th>Component</th><th>Status</th><th>Alternative</th></tr>
+<tr><td>TabTransformer</td><td class="status-no">Not implemented</td>
+<td>Raises <code>NotImplementedError</code>. Use mlp, xgboost, or lightgbm.</td></tr>
+<tr><td>Transformer regressor</td><td class="status-no">Not implemented</td>
+<td>Raises <code>NotImplementedError</code>. Use mlp, xgboost, or lightgbm.</td></tr>
+<tr><td>Sphinx documentation site</td><td class="status-no">Not generated</td>
+<td>This manual plus module docstrings.</td></tr>
+<tr><td>8 Jupyter notebooks</td><td class="status-no">Not generated</td>
+<td><code>examples/run_end_to_end.py</code> covers the same ground.</td></tr>
+</table>
+
+<h2>11.4 Changelog of bugs found and fixed during verification</h2>
+<p>1. SHAP 3D-array output format (modern shap versions) crashed both
+<code>shap_explain</code> and <code>tier3_shap_selection</code> &mdash; fixed.
+2. Simulator crashed when <code>n_eqtm_pairs</code> exceeded available
+CpGs/genes on small demo cohorts &mdash; now clips with a warning.
+3. LightGBM's default verbose training output was extremely noisy &mdash;
+suppressed. 4. pandas 3.0's new default string dtype broke
+<code>dtype == object</code> checks in the CLI's task auto-inference,
+causing a crash on binary categorical outcomes &mdash; fixed with proper
+dtype checks. 5. The CLI originally only accepted two hardcoded omics
+filenames and four hardcoded outcome columns &mdash; rewritten to
+auto-discover any CSV as a modality and accept any clinical column as an
+outcome. 6. <strong>In-sample permutation importance is meaningless for
+overfit models, and the CLI was doing exactly that</strong>: with hundreds
+of features and modest sample sizes, the classifier reached 100% training
+accuracy, and permuting any single feature on that same training data
+barely moved an already-memorized fit &mdash; verified directly, importance
+was exactly 0.000 for every one of 500 features. Fixed by adding
+<code>cv_permutation_importance</code>, which retrains per CV fold and
+evaluates on the held-out fold; a regression test directly demonstrates the
+in-sample version collapsing while the CV version does not, on the same
+deliberately-overfit synthetic data. 7. <code>openpyxl</code> and
+<code>Pillow</code> were installed in the development environment but not
+declared in <code>pyproject.toml</code>/<code>requirements.txt</code>,
+which would have broken a clean install &mdash; now declared explicitly.</p>
+
+</body>
+</html>

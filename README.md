@@ -6,7 +6,7 @@
 
 A working, tested Python package for multi-omics integration and prediction, built around an eQTM-informed feature-selection philosophy (biological prior + variance backfill, extending the reasoning from the [IntegrAO](https://doi.org/10.1038/s42256-024-00942-3) framework). It is demonstrated on a synthetic asthma cohort but is disease-agnostic — swap in your own clinical/omics tables via the schema in `eqtmfusion/simulation/simulate.py::SCHEMA`.
 
-**Honesty note on scope:** the original spec requested a very large surface area (TabTransformer, DeepCORAL domain adaptation, full GAT graph fusion, Sphinx docs, PDF manual, 8 notebooks, multi-OS CI, external cohort validation harness, etc.). Building all of that to genuine production quality is realistically a multi-week team effort. What's below is **fully implemented, tested, and verified to run end-to-end** (30/30 unit tests pass, including subprocess-level CLI tests; every optional dependency — xgboost, lightgbm, catboost, shap, lime, boruta, umap-learn, seaborn, networkx, weasyprint — has been installed and its code path actually executed, not just try/excepted). Two real bugs were found and fixed during this verification pass (see Changelog). Items that remain intentionally lightweight, optional, or not implemented are flagged explicitly so nothing is oversold.
+**Honesty note on scope:** the original spec requested a very large surface area (TabTransformer, DeepCORAL domain adaptation, full GAT graph fusion, Sphinx docs, PDF manual, 8 notebooks, multi-OS CI, external cohort validation harness, publication-quality figures/tables, etc.). Building all of that to genuine production quality is realistically a multi-week team effort. What's below is **fully implemented, tested, and verified to run end-to-end** (49/49 unit tests pass, including subprocess-level CLI tests and a PDF user manual generated and text-verified; every optional dependency — xgboost, lightgbm, catboost, shap, lime, boruta, umap-learn, seaborn, networkx, weasyprint — has been installed and its code path actually executed, not just try/excepted). Seven real bugs were found and fixed across two verification passes (see Changelog), including a serious one: the CLI's feature-importance computation was silently collapsing to zero for every feature due to an in-sample overfitting artifact. Items that remain intentionally lightweight, optional, or not implemented are flagged explicitly so nothing is oversold.
 
 ## Status by requested component
 
@@ -34,6 +34,9 @@ A working, tested Python package for multi-omics integration and prediction, bui
 | **CLI now reports real cross-validated metrics**, not just in-sample | ✅ `--n-cv-folds` (default 5) runs proper CV and reports both in-sample and out-of-fold metrics side by side in the report — verified to correctly expose overfitting (in-sample accuracy 1.0 vs. CV accuracy 0.66 on a small demo cohort) rather than only showing the optimistic number |
 | External (independent cohort) validation | ✅ Function provided (`utilities.validation.external_validation`); you supply the second cohort |
 | Metrics (classification/regression/ordinal incl. MCC, CCC, QWK) | ✅ Fully implemented, tested |
+| **Publication-quality figures** (Nature-journal styling) | ✅ **New**: `visualization.style` (Okabe-Ito colorblind-safe palette, 300+ dpi, thin spines, panel labels A/B/C/D, PNG+PDF+SVG export) plus 6 multi-panel diagnostic figure types: classification (ROC/PR/confusion matrix/calibration), regression (predicted-vs-observed/residuals/histogram/Bland-Altman), ordinal (confusion matrix/per-class accuracy), feature importance (modality-colored), CV performance summary (box+strip per metric), eQTM forest plot (β ± 95% CI). Verified via automated text-collision detection across all 6 figure types (0 overlaps) |
+| **Publication-standard tables** | ✅ **New**: `reporting.tables` — Table 1 cohort characteristics (mean±SD / n(%), between-group tests, verified to correctly detect a known group difference at p<0.001 in a synthetic check), model performance summary (mean±SD across CV folds), ranked/modality-annotated biomarker table. Exports to CSV, XLSX, and publication-style table-as-PNG |
+| **CLI now auto-generates the full publication bundle** | ✅ `run-all` writes `figures/Figure1-4_*.png/.pdf` and `tables/Table1-3_*.csv/.xlsx` automatically — diagnostics use **out-of-fold** CV predictions, not in-sample, for an honest figure |
 | Visualizations (ROC, PR, volcano, heatmap, PCA, UMAP/t-SNE, correlation, network, feature importance) | ✅ Fully implemented and verified to render, **including UMAP, seaborn clustermap, and the networkx eQTM network plot** (previously untested optional paths) |
 | Automated HTML report (Jinja2) | ✅ Fully implemented, tested, verified to render with embedded figures |
 | PDF report | ✅ **Now verified working** via weasyprint (previously flagged as untested due to system-dependency risk; installed and confirmed generating a valid PDF in this environment) |
@@ -41,9 +44,9 @@ A working, tested Python package for multi-omics integration and prediction, bui
 | Python API | ✅ Every module importable and independently usable |
 | GPU compatibility | ✅ All torch-using functions accept a `device` param; CLI now exposes `--device auto/cpu/cuda` (previously only the library had this, not the CLI) |
 | Jupyter notebooks (8 requested) | ❌ Not generated in this pass — the `examples/run_end_to_end.py` script covers the same ground and is verified to run; converting it into notebook cells is mechanical if you want that format |
-| Sphinx docs, PDF user manual, troubleshooting/best-practices guides | ❌ Not generated — this README plus module docstrings are the current documentation |
+| Sphinx docs, PDF user manual, troubleshooting/best-practices guides | ✅ **PDF user manual now included** (`docs/eQTMFusion_User_Manual.pdf`, 16 pages — installation, data schema, quick start, advanced tutorial, full CLI/API reference, troubleshooting, best practices). ❌ Sphinx HTML docs site still not generated |
 | Docker, conda env, GitHub Actions CI | ✅ Provided (`Dockerfile`, `environment.yml`, `.github/workflows/ci.yml`) — CI config is standard but has not been run against actual GitHub infrastructure here |
-| pytest / black / ruff / mypy / pre-commit config | ✅ `pyproject.toml` configured for all; pytest suite actually run (30/30 passing) |
+| pytest / black / ruff / mypy / pre-commit config | ✅ `pyproject.toml` configured for all; pytest suite actually run (49/49 passing) |
 
 ## Changelog (bugs found and fixed during verification)
 
@@ -52,8 +55,18 @@ A working, tested Python package for multi-omics integration and prediction, bui
 3. **LightGBM verbose spam**: default LightGBM training printed hundreds of lines per fit. Suppressed via `verbose=-1`.
 4. **pandas 3.0 string-dtype detection bug**: `col.dtype == object` silently fails under pandas 3.0's new default string dtype, which caused the CLI's task auto-inference to misclassify a binary categorical outcome (`asthma_status`) as regression, crashing when it tried `.astype(float)` on the string column "Case"/"Control". Fixed with proper `pd.api.types.is_object_dtype` / `is_string_dtype` checks throughout the CLI.
 5. **CLI outcome/modality rigidity**: originally `run_all` only accepted a hardcoded 4-item outcome list and only loaded `methylation.csv`/`expression.csv` by name. Rewritten to auto-discover any CSV as a modality and accept any clinical column as an outcome, with task type auto-inferred or explicit.
+6. **In-sample permutation importance is meaningless for overfit models — and the CLI was doing exactly that.** With hundreds of features and modest sample sizes, `run-all`'s classifier reaches 100% training accuracy; permuting any single feature on that same training data barely moves an already-memorized fit, so importance collapsed to ~0.000 for every single feature (verified directly: `importance_mean.describe()` showed mean=0.0, std=0.0, max=0.0 across all 500 features). Fixed by adding `explainability.cv_permutation_importance`, which retrains per CV fold and computes importance on the held-out fold — verified via two new regression tests, including one that directly demonstrates the in-sample version collapsing while the CV version does not, on the same deliberately-overfit data.
+7. **Undeclared runtime dependencies**: `openpyxl` (used by `table.to_excel`) and `Pillow` (used in test DPI verification, and transitively by matplotlib) were installed in this environment but not listed in `pyproject.toml`/`requirements.txt`, which would have broken a clean install. Now declared explicitly.
 
 
+
+## Documentation
+
+A 16-page PDF user manual is included at [`docs/eQTMFusion_User_Manual.pdf`](docs/eQTMFusion_User_Manual.pdf), covering installation, data formatting, quick start, an advanced tutorial (custom cohorts/outcomes, running eQTM analysis yourself), full CLI reference, full Python API reference by module, troubleshooting, best practices, and the same implementation-status/changelog tables as this README. It's generated from `docs/manual_source.html` via weasyprint — regenerate after any doc edits with:
+
+```bash
+python3 -c "from weasyprint import HTML; HTML('docs/manual_source.html').write_pdf('docs/eQTMFusion_User_Manual.pdf')"
+```
 
 ## Installation
 
@@ -84,7 +97,7 @@ eqtmfusion run-all --data-dir data/ --outcome exacerbation_count \
 eqtmfusion run-all --data-dir data/ --outcome severity --device cuda --out results/
 ```
 
-Open `results/report.html` in a browser. The report includes both in-sample metrics (optimistic) and k-fold cross-validated metrics (reportable) side by side.
+Open `results/report.html` in a browser. The report includes both in-sample metrics (optimistic) and k-fold cross-validated metrics (reportable) side by side. Alongside it, `results/figures/` and `results/tables/` contain the full publication-ready bundle: Nature-style multi-panel diagnostic figures (300+ dpi PNG + vector PDF), a Table 1 cohort characteristics table, a model performance summary table, and a ranked biomarker table (CSV + XLSX).
 
 ## Quick start — Python API
 

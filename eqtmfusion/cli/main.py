@@ -32,8 +32,10 @@ from eqtmfusion.qc import run_qc
 from eqtmfusion.feature_selection import combine_tier1_tier2
 from eqtmfusion.fusion import early_fusion
 from eqtmfusion.models import get_classifier, get_regressor, train_coral_model, predict_coral, CLASSIFIER_NAMES, REGRESSOR_NAMES
+from eqtmfusion.explainability import permutation_importance_explain, cv_permutation_importance
+from eqtmfusion.eqtm import run_eqtm_analysis
 from eqtmfusion.utilities import classification_metrics, ordinal_metrics, regression_metrics, run_cv, get_logger
-from eqtmfusion.reporting import generate_html_report
+from eqtmfusion.reporting import generate_html_report, generate_publication_outputs
 
 logger = get_logger()
 
@@ -102,6 +104,37 @@ def infer_task(clinical: pd.DataFrame, outcome: str) -> str:
     return "regression"
 
 
+class _CoralPredictWrapper:
+    """Minimal sklearn-compatible wrapper around an ALREADY-FITTED
+    CoralOrdinalNet, for permutation_importance_explain (predict-only,
+    no retraining)."""
+    def __init__(self, model, device):
+        self.model = model
+        self.device = device
+
+    def predict(self, X):
+        return predict_coral(self.model, X, device=self.device)
+
+
+class _CoralEstimator:
+    """Full sklearn-style estimator (.fit + .predict) wrapping CORAL
+    training, so it can be passed as `model_fn` to cv_permutation_importance
+    (which needs to retrain a fresh model per fold, not just predict)."""
+    def __init__(self, num_classes, device, n_epochs=200):
+        self.num_classes = num_classes
+        self.device = device
+        self.n_epochs = n_epochs
+        self.model_ = None
+
+    def fit(self, X, y):
+        self.model_ = train_coral_model(X, y, self.num_classes, n_epochs=self.n_epochs,
+                                         verbose_every=0, device=self.device)
+        return self
+
+    def predict(self, X):
+        return predict_coral(self.model_, X, device=self.device)
+
+
 @cli.command()
 @click.option("--data-dir", required=True, help="Directory containing clinical.csv plus any omics CSVs.")
 @click.option("--outcome", default="severity", help="Any column name present in clinical.csv.")
@@ -152,6 +185,7 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
     logger.info("Preprocessing each modality...")
     for name, df in modalities.items():
         modalities[name] = preprocess_omics_matrix(df)
+    preprocessed_modalities = {name: df.copy() for name, df in modalities.items()}
 
     logger.info("Feature selection (Tier1 eQTM prior where applicable + Tier2 variance)...")
     fs_reports = {}
@@ -173,9 +207,13 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
     logger.info(f"Task: {task} | Outcome: {outcome} | Model: {model or '(default)'}")
 
     cv_metrics_list = []
+    diag_y_true, diag_y_pred, diag_y_proba = None, None, None  # out-of-fold, for the diagnostic figure
+    class_labels_for_plot = None
+
     if task == "classification":
         if pd.api.types.is_numeric_dtype(y_raw):
             y = y_raw.astype(int)
+            class_labels_for_plot = ["0", "1"]
         else:
             categories = sorted(y_raw.astype(str).unique())
             if len(categories) != 2:
@@ -184,6 +222,7 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
                     f"use --task ordinal for multi-class ordered outcomes."
                 )
             y = (y_raw.astype(str) == categories[-1]).astype(int)
+            class_labels_for_plot = categories
         model_name = model or "random_forest"
         model_fn = lambda: get_classifier(model_name)
 
@@ -191,24 +230,39 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
             cv_result = run_cv(model_fn, fused.values, y.values, task="classification", n_splits=n_cv_folds)
             for fold in cv_result["fold_results"]:
                 cv_metrics_list.append(classification_metrics(fold["y_true"], fold["y_pred"], fold["y_proba"]))
+            # concatenate out-of-fold predictions across all folds for an honest
+            # (non-in-sample) diagnostic figure
+            diag_y_true = np.concatenate([f["y_true"] for f in cv_result["fold_results"]])
+            diag_y_pred = np.concatenate([f["y_pred"] for f in cv_result["fold_results"]])
+            diag_y_proba = np.concatenate([f["y_proba"] for f in cv_result["fold_results"]])
+
         fitted_model = model_fn()
         fitted_model.fit(fused.values, y.values)
         y_pred = fitted_model.predict(fused.values)
         y_proba = fitted_model.predict_proba(fused.values)[:, 1] if hasattr(fitted_model, "predict_proba") else None
         insample_metrics = classification_metrics(y.values, y_pred, y_proba)
+        importance_df = cv_permutation_importance(
+            model_fn, fused.values, y.values, fused.columns.tolist(),
+            task="classification", n_splits=max(n_cv_folds, 3), n_repeats=5)
+
+        if diag_y_true is None:  # n_cv_folds == 0: fall back to in-sample (flagged in the figure title)
+            diag_y_true, diag_y_pred, diag_y_proba = y.values, y_pred, y_proba
 
     elif task == "ordinal":
         is_stringlike = pd.api.types.is_object_dtype(y_raw) or pd.api.types.is_string_dtype(y_raw)
         if is_stringlike:
-            y = encode_severity_ordinal(clinical, severity_col=outcome,
-                                         order=sorted(y_raw.astype(str).unique()))
+            order = sorted(y_raw.astype(str).unique())
+            y = encode_severity_ordinal(clinical, severity_col=outcome, order=order)
+            class_labels_for_plot = order
         else:
             y = y_raw.astype(int)
+            class_labels_for_plot = [str(c) for c in sorted(y.unique())]
         num_classes = y.nunique()
 
         if n_cv_folds > 0:
             from sklearn.model_selection import StratifiedKFold
             skf = StratifiedKFold(n_splits=n_cv_folds, shuffle=True, random_state=42)
+            oof_true, oof_pred = [], []
             for train_idx, test_idx in skf.split(fused.values, y.values):
                 fold_model = train_coral_model(
                     fused.values[train_idx], y.values[train_idx], num_classes,
@@ -216,10 +270,20 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
                 )
                 fold_pred = predict_coral(fold_model, fused.values[test_idx], device=device)
                 cv_metrics_list.append(ordinal_metrics(y.values[test_idx], fold_pred))
+                oof_true.append(y.values[test_idx]); oof_pred.append(fold_pred)
+            diag_y_true = np.concatenate(oof_true)
+            diag_y_pred = np.concatenate(oof_pred)
 
         fitted_model = train_coral_model(fused.values, y.values, num_classes, n_epochs=200, verbose_every=50, device=device)
         y_pred = predict_coral(fitted_model, fused.values, device=device)
         insample_metrics = ordinal_metrics(y.values, y_pred)
+        importance_df = cv_permutation_importance(
+            lambda: _CoralEstimator(num_classes, device), fused.values, y.values,
+            fused.columns.tolist(), task="classification",  # stratified splitter is fine for ordinal too
+            n_splits=max(n_cv_folds, 3), n_repeats=5, scoring="accuracy")
+
+        if diag_y_true is None:
+            diag_y_true, diag_y_pred = y.values, y_pred
 
     else:  # regression
         y = y_raw.astype(float)
@@ -230,15 +294,24 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
             cv_result = run_cv(model_fn, fused.values, y.values, task="regression", n_splits=n_cv_folds)
             for fold in cv_result["fold_results"]:
                 cv_metrics_list.append(regression_metrics(fold["y_true"], fold["y_pred"]))
+            diag_y_true = np.concatenate([f["y_true"] for f in cv_result["fold_results"]])
+            diag_y_pred = np.concatenate([f["y_pred"] for f in cv_result["fold_results"]])
 
         fitted_model = model_fn()
         fitted_model.fit(fused.values, y.values)
         y_pred = fitted_model.predict(fused.values)
         insample_metrics = regression_metrics(y.values, y_pred)
+        importance_df = cv_permutation_importance(
+            model_fn, fused.values, y.values, fused.columns.tolist(),
+            task="regression", n_splits=max(n_cv_folds, 3), n_repeats=5)
+
+        if diag_y_true is None:
+            diag_y_true, diag_y_pred = y.values, y_pred
 
     logger.info(f"In-sample metrics: {insample_metrics}")
     metrics_tables = {"In-sample metrics (optimistic; see CV table for reportable results)":
                        pd.DataFrame([insample_metrics])}
+    cv_df = None
     if cv_metrics_list:
         cv_df = pd.DataFrame(cv_metrics_list)
         cv_summary = cv_df.agg(["mean", "std"]).transpose()
@@ -248,6 +321,42 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
     else:
         logger.info("CV skipped (--n-cv-folds 0); in-sample metrics only (optimistic, not reportable).")
 
+    # --- Optional eQTM forest plot: only when the demo simulator's ground_truth.json
+    # provides candidate (CpG, gene) pairs and both an eQTM-prior modality and an
+    # "expression" modality are available. For real cohorts without this file, run
+    # eqtmfusion.eqtm.run_eqtm_analysis yourself and pass the results directly to
+    # eqtmfusion.reporting.generate_publication_outputs(eqtm_results=...).
+    eqtm_result_df = None
+    if eqtm_cpgs and "expression" in preprocessed_modalities and eqtm_modality in preprocessed_modalities:
+        try:
+            with open(gt_path) as f:
+                gt_pairs = json.load(f).get("eqtm_pairs", [])
+            if gt_pairs:
+                logger.info(f"Running eQTM analysis for the forest plot ({len(gt_pairs)} candidate pairs)...")
+                covariate_cols = [c for c in ["age", "bmi"] if c in clinical.columns]
+                eqtm_covariates = clinical[covariate_cols] if covariate_cols else pd.DataFrame(index=clinical.index)
+                eqtm_out = run_eqtm_analysis(
+                    preprocessed_modalities[eqtm_modality], preprocessed_modalities["expression"],
+                    eqtm_covariates, candidate_pairs=[tuple(p) for p in gt_pairs],
+                )
+                eqtm_result_df = eqtm_out.results
+        except Exception as e:
+            logger.info(f"Skipping eQTM forest plot ({e})")
+
+    logger.info("Generating publication-quality figures and tables...")
+    pub_outputs = generate_publication_outputs(
+        outdir=out, task=task,
+        y_true=diag_y_true, y_pred=diag_y_pred, y_proba=diag_y_proba,
+        clinical_df=clinical,
+        group_col=outcome if task in ("classification", "ordinal") else None,
+        cv_metrics_df=cv_df, importance_df=importance_df, importance_value_col="importance_mean",
+        eqtm_results=eqtm_result_df, class_labels=class_labels_for_plot,
+        title_prefix=f"{outcome}: ",
+    )
+    for category, items in pub_outputs.items():
+        for name, paths in items.items():
+            logger.info(f"  [{category}] {name}: {list(paths.values())}")
+
     report_path = generate_html_report(
         output_path=f"{out}/report.html",
         title=f"eQTMFusion Report -- outcome: {outcome} ({task})",
@@ -255,8 +364,12 @@ def run_all(data_dir, outcome, task, model, out, target_n_features, eqtm_modalit
         qc_tables={f"{name} QC": pd.DataFrame([vars(r)]) for name, r in qc_reports.items()},
         feature_selection_tables={f"{name} Tier1+Tier2": pd.DataFrame([r]) for name, r in fs_reports.items()},
         metrics_tables=metrics_tables,
+        biomarker_tables={"Top 25 features (permutation importance)":
+                           importance_df.sort_values("importance_mean", ascending=False).head(25)},
     )
     logger.info(f"Report written to {report_path}")
+    logger.info(f"Publication-quality figures written to {out}/figures/ (PNG @ 300dpi + PDF)")
+    logger.info(f"Publication-quality tables written to {out}/tables/ (CSV + XLSX)")
 
 
 if __name__ == "__main__":
