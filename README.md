@@ -6,6 +6,9 @@
 
 A working, tested Python package for multi-omics integration and prediction, built around an eQTM-informed feature-selection philosophy (biological prior + variance backfill, extending the reasoning from the [IntegrAO](https://doi.org/10.1038/s42256-024-00942-3) framework). It is demonstrated on a synthetic asthma cohort but is disease-agnostic — swap in your own clinical/omics tables via the schema in `eqtmfusion/simulation/simulate.py::SCHEMA`.
 
+[IntegrAO](https://doi.org/10.1038/s42256-024-00942-3)
+
+
 ## Package structure
 
 ```
